@@ -13,6 +13,7 @@ export interface IChaptersAsyncConfig {
     useExisting?: Type<IChaptersAsyncFactory>
     useClass?: Type<IChaptersAsyncFactory>
     useFactory?: () => IChapter[]
-    inject?: any[]
+    inject?: any[],
+    imports?: any[]
 }
 

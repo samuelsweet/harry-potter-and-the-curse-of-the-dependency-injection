@@ -1,4 +1,3 @@
-import { CharactersModule } from '@characters/characters/characters.module';
 import { DynamicModule, Module } from '@nestjs/common';
 import { ChaptersService } from './chapters.service';
 import { CHAPTERS } from './constants';
@@ -16,7 +15,7 @@ export class ChaptersModule {
 
     return {
       module: ChaptersModule,
-      imports: [CharactersModule],
+      imports: [...config.imports || []],
       providers: [provider, ChaptersService],
       exports: [ChaptersService]
     }
