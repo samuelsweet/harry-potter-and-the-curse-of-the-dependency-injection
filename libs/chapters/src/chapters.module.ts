@@ -6,21 +6,18 @@ import { IChaptersAsyncConfig } from './interfaces';
 
 @Module({})
 export class ChaptersModule {
-  static registerAsync(config: IChaptersAsyncConfig) : DynamicModule{
-
+  static registerAsync(config: IChaptersAsyncConfig): DynamicModule {
     const provider = {
-			provide: CHAPTERS,
-			useFactory: config.useFactory,
-			inject: config.inject || [],
-		}
+      provide: CHAPTERS,
+      useFactory: config.useFactory,
+      inject: config.inject || [],
+    };
 
     return {
       module: ChaptersModule,
       imports: [CharactersModule],
       providers: [provider, ChaptersService],
-      exports: [ChaptersService]
-    }
+      exports: [ChaptersService],
+    };
   }
-
 }
-

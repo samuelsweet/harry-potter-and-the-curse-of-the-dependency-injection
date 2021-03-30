@@ -7,15 +7,14 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-
 @Module({
   imports: [
     CharactersModule.forRootAsync({
-      useFactory: () => characterData
+      useFactory: () => characterData,
     }),
     ChaptersModule.registerAsync({
-      useFactory: () => chapterData
-    })
+      useFactory: () => chapterData,
+    }),
   ],
   controllers: [AppController],
   providers: [AppService, CharactersService],

@@ -5,13 +5,15 @@ import { IChapter } from './interfaces';
 
 @Injectable()
 export class ChaptersService {
-    constructor(
-        @Inject(CHAPTERS) private readonly chapters: IChapter[],
-        private readonly characters: CharactersService
-    ) {
-        this.chapters.forEach((chapter, index) => {
-            const title = `${chapter.title}. Featuring ${this.characters.inChapter(index)}`
-            Logger.verbose(title, `Chapter ${index+1}`)
-        })
-    }
+  constructor(
+    @Inject(CHAPTERS) private readonly chapters: IChapter[],
+    private readonly characters: CharactersService,
+  ) {
+    this.chapters.forEach((chapter, index) => {
+      const title = `${chapter.title}. Featuring ${this.characters.inChapter(
+        index,
+      )}`;
+      Logger.verbose(title, `Chapter ${index + 1}`);
+    });
+  }
 }

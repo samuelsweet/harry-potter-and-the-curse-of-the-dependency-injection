@@ -5,19 +5,17 @@ import { ICharactersAsyncConfig } from './interfaces';
 
 @Module({})
 export class CharactersModule {
-  static forRootAsync( config: ICharactersAsyncConfig) : DynamicModule {
-
+  static forRootAsync(config: ICharactersAsyncConfig): DynamicModule {
     const provider = {
-			provide: CHARACTERS,
-			useFactory: config.useFactory,
-			inject: config.inject || [],
-		}
+      provide: CHARACTERS,
+      useFactory: config.useFactory,
+      inject: config.inject || [],
+    };
 
     return {
       module: CharactersModule,
       providers: [provider, CharactersService],
-      exports: [CharactersService]
-    }
-
+      exports: [CharactersService],
+    };
   }
 }
