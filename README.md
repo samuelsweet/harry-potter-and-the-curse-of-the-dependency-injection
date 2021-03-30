@@ -1,73 +1,123 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo_text.svg" width="320" alt="Nest Logo" /></a>
-</p>
+# LeviOsa or Leviosaaa?
+The wizardry needed to create sibling dependencies [DynamicModules](https://docs.nestjs.com/fundamentals/dynamic-modules) in [NestJs](http://nestjs.com)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Very likely my own misunderstanding, or maybe a shortcoming of the DI in NestJs or the documentation, I found that creating a configurable module that imported sibling can consume did my utter nut in. The [broken branch](../../tree/Broken) demonstrates how I understood the DI to work (but it did not) while the `master` is how I managed to do it.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+While this is a simplfied project to illustrate, I can't help but think this is an area that could be improved on (or at least made clearer in the documentation). Common real-world useage would be Database modules, configuration modules, etc... often worked around by making the module `@Global` (which feels... dirty?)
 
-## Description
+## Leviosaaa
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-## Installation
+Creating a configurable module is fairly straight forward:
+- add static methods to module
+- configure and return a [DynamicModule](https://docs.nestjs.com/fundamentals/dynamic-modules)
 
-```bash
-$ npm install
+```typescript
+@Module({})
+export class CharactersModule {
+  static forRootAsync(config: ICharactersAsyncConfig): DynamicModule {
+    const provider = {
+      provide: CHARACTERS,
+      useFactory: config.useFactory,
+      inject: config.inject || [],
+    };
+
+    return {
+      module: CharactersModule,
+      providers: [provider, CharactersService],
+      exports: [CharactersService],
+    };
+  }
+}
+```
+The problem I ran into is when another DynamicModule depends on the configured version
+```typescript
+@Module({})
+export class ChaptersModule {
+  static registerAsync(config: IChaptersAsyncConfig): DynamicModule {
+    const provider = {
+      provide: CHAPTERS,
+      useFactory: config.useFactory,
+      inject: config.inject || [],
+    };
+
+    return {
+      module: ChaptersModule,
+      imports: [CharactersModule],
+      providers: [provider, ChaptersService],
+      exports: [ChaptersService],
+    };
+  }
+}
+```
+Which I would have HOPED would be wired up here:
+```typescript
+@Module({
+  imports: [
+    CharactersModule.forRootAsync({
+      useFactory: () => characterData,
+    }),
+    ChaptersModule.registerAsync({
+      useFactory: () => chapterData,
+    }),
+  ],
+  controllers: [AppController],
+  providers: [AppService, CharactersService],
+})
+export class AppModule {}
 ```
 
-## Running the app
-
+However NestJS doesn't appear to share module exports with siblings so you end up with this message:
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+Error: Nest can't resolve dependencies of the ChaptersService (CHAPTERS, ?). Please make sure that the argument CharactersService at index [1] is available in the ChaptersModule context.
 ```
 
-## Test
+## LeviOsa
 
-```bash
-# unit tests
-$ npm run test
+This is the only way I have found to make this work. No idea if its the correct way
 
-# e2e tests
-$ npm run test:e2e
+- Add an optional `requires?: any[]` to the async interface
+- Destruct into the returning DynamicModule
+```typescript
+@Module({})
+export class ChaptersModule {
+  static registerAsync(config: IChaptersAsyncConfig) : DynamicModule{
 
-# test coverage
-$ npm run test:cov
+    const provider = {
+      provide: CHAPTERS,
+      useFactory: config.useFactory,
+      inject: config.inject || [],
+    }
+
+    return {
+      module: ChaptersModule,
+      imports: [...config.requires || []], // import pre-configured
+      providers: [provider, ChaptersService],
+      exports: [ChaptersService]
+    }
+  }
+
+}
 ```
 
-## Support
+Then in the consuming module, capture the dependency into a seperate variable
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```typescript
+// Pre-Configure any dependent modules
+export const configured = [
+  CharactersModule.forRoot(characterData)
+]
 
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+@Module({
+  imports: [
+    ...configured, // include configured modules into scope
+    ChaptersModule.registerAsync({
+      requires: configured, // pass configured modules
+      useFactory: () => chapterData
+    })
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+```

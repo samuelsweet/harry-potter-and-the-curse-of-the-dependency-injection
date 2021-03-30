@@ -6,16 +6,16 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-
-export const sharedImports = [
+// Pre-Configure any dependent modules
+export const configured = [
   CharactersModule.forRoot(characterData)
 ]
 
 @Module({
   imports: [
-    ...sharedImports,
+    ...configured, // include configured modules into scope
     ChaptersModule.registerAsync({
-      imports: sharedImports,
+      requires: configured, // pass configured modules
       useFactory: () => chapterData
     })
   ],

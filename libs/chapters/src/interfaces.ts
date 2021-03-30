@@ -14,6 +14,6 @@ export interface IChaptersAsyncConfig {
     useClass?: Type<IChaptersAsyncFactory>
     useFactory?: () => IChapter[]
     inject?: any[],
-    imports?: any[]
+    requires?: any[]
 }
 

@@ -8,14 +8,14 @@ export class ChaptersModule {
   static registerAsync(config: IChaptersAsyncConfig) : DynamicModule{
 
     const provider = {
-			provide: CHAPTERS,
-			useFactory: config.useFactory,
-			inject: config.inject || [],
-		}
+      provide: CHAPTERS,
+      useFactory: config.useFactory,
+      inject: config.inject || [],
+    }
 
     return {
       module: ChaptersModule,
-      imports: [...config.imports || []],
+      imports: [...config.requires || []], // import pre-configured
       providers: [provider, ChaptersService],
       exports: [ChaptersService]
     }
